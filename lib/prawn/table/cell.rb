@@ -1,4 +1,4 @@
-# encoding: utf-8   
+# encoding: utf-8
 
 # cell.rb: Table cell drawing.
 #
@@ -9,7 +9,7 @@
 module Prawn
   class Document
 
-    # Instantiates and draws a cell on the document. 
+    # Instantiates and draws a cell on the document.
     #
     #   cell(:content => "Hello world!", :at => [12, 34])
     #
@@ -20,9 +20,9 @@ module Prawn
       cell.draw
       cell
     end
-    
-    # Set up, but do not draw, a cell. Useful for creating cells with 
-    # formatting options to be inserted into a Table. Call +draw+ on the 
+
+    # Set up, but do not draw, a cell. Useful for creating cells with
+    # formatting options to be inserted into a Table. Call +draw+ on the
     # resulting Cell to ink it.
     #
     # See the documentation on Prawn::Cell for details on the arguments.
@@ -34,7 +34,7 @@ module Prawn
   end
 
   class Table
-    
+
     # A Cell is a rectangular area of the page into which content is drawn. It
     # has a framework for sizing itself and adding padding and simple styling.
     # There are several standard Cell subclasses that handle things like text,
@@ -54,12 +54,12 @@ module Prawn
       attr_reader :padding
 
       # If provided, the minimum width that this cell will permit.
-      # 
+      #
       def min_width
         set_width_constraints
         @min_width
       end
-      
+
       # If provided, the maximum width that this cell can be drawn in.
       #
       def max_width
@@ -88,7 +88,7 @@ module Prawn
       # "Data" section of the Prawn::Table documentation for details on cellable
       # objects.
       #
-      attr_accessor :content 
+      attr_accessor :content
 
       # The background color, if any, for this cell. Specified in HTML RGB
       # format, e.g., "ccffff". The background is drawn under the whole cell,
@@ -104,7 +104,7 @@ module Prawn
         at = options.delete(:at) || [0, pdf.cursor]
         content = content.to_s if content.nil? || content.kind_of?(Numeric) ||
           content.kind_of?(Date)
-        
+
         if content.is_a?(Hash)
           options.update(content)
           content = options[:content]
@@ -112,20 +112,19 @@ module Prawn
           options[:content] = content
         end
 
-        case content
-        when Prawn::Table::Cell
+        cell_class = Prawn::Table::CellFactory.find_cell_for_content(content)
+        if cell_class
+          cell_class.new(pdf,at,options)
+        elsif content.kind_of? Prawn::Table::Cell
           content
-        when String
-          Cell::Text.new(pdf, at, options)
-        when Prawn::Table
-          Cell::Subtable.new(pdf, at, options)
-        when Array
-          subtable = Prawn::Table.new(options[:content], pdf, {})
-          Cell::Subtable.new(pdf, at, options.merge(:content => subtable))
         else
-          # TODO: other types of content
           raise ArgumentError, "Content type not recognized: #{content.inspect}"
         end
+      end
+
+      # Used by CellFactory to tell if the subclass can render with the content
+      def self.can_render_with?(content)
+        raise 'Define in subclasses'
       end
 
       # A small amount added to the bounding box width to cover over floating-
@@ -200,8 +199,8 @@ module Prawn
       # constraints. Must be implemented in subclasses.
       #
       def natural_content_width
-        raise NotImplementedError, 
-          "subclasses must implement natural_content_width"
+        raise NotImplementedError,
+        "subclasses must implement natural_content_width"
       end
 
       # Returns the cell's height in points, inclusive of padding.
@@ -218,7 +217,7 @@ module Prawn
         if @height # manually set
           return @height - padding_top - padding_bottom
         end
-        
+
         natural_content_height
       end
 
@@ -226,8 +225,8 @@ module Prawn
       # constraints. Must be implemented in subclasses.
       #
       def natural_content_height
-        raise NotImplementedError, 
-          "subclasses must implement natural_content_height"
+        raise NotImplementedError,
+        "subclasses must implement natural_content_height"
       end
 
       # Draws the cell onto the document. Pass in a point [x,y] to override the
@@ -238,7 +237,7 @@ module Prawn
 
         draw_background(pt)
         draw_borders(pt)
-        @pdf.bounding_box([pt[0] + padding_left, pt[1] - padding_top], 
+        @pdf.bounding_box([pt[0] + padding_left, pt[1] - padding_top],
                           :width  => content_width + FPTolerance,
                           :height => content_height + FPTolerance) do
           draw_content
@@ -278,26 +277,26 @@ module Prawn
       #
       def padding=(pad)
         @padding = case
-        when pad.nil?
-          [0, 0, 0, 0]
-        when Numeric === pad # all padding
-          [pad, pad, pad, pad]
-        when pad.length == 2 # vert, horiz
-          [pad[0], pad[1], pad[0], pad[1]]
-        when pad.length == 3 # top, horiz, bottom
-          [pad[0], pad[1], pad[2], pad[1]]
-        when pad.length == 4 # top, right, bottom, left
-          [pad[0], pad[1], pad[2], pad[3]]
-        else
-          raise ArgumentError, ":padding must be a number or an array [v,h] " +
-            "or [t,r,b,l]"
-        end
+                   when pad.nil?
+                     [0, 0, 0, 0]
+                   when Numeric === pad # all padding
+                     [pad, pad, pad, pad]
+                   when pad.length == 2 # vert, horiz
+                     [pad[0], pad[1], pad[0], pad[1]]
+                   when pad.length == 3 # top, horiz, bottom
+                     [pad[0], pad[1], pad[2], pad[1]]
+                   when pad.length == 4 # top, right, bottom, left
+                     [pad[0], pad[1], pad[2], pad[3]]
+                   else
+                     raise ArgumentError, ":padding must be a number or an array [v,h] " +
+                       "or [t,r,b,l]"
+                   end
       end
 
       def padding_top
         @padding[0]
       end
-      
+
       def padding_top=(val)
         @padding[0] = val
       end
@@ -305,7 +304,7 @@ module Prawn
       def padding_right
         @padding[1]
       end
-      
+
       def padding_right=(val)
         @padding[1] = val
       end
@@ -313,7 +312,7 @@ module Prawn
       def padding_bottom
         @padding[2]
       end
-      
+
       def padding_bottom=(val)
         @padding[2] = val
       end
@@ -321,7 +320,7 @@ module Prawn
       def padding_left
         @padding[3]
       end
-      
+
       def padding_left=(val)
         @padding[3] = val
       end
@@ -335,121 +334,122 @@ module Prawn
       #
       def border_color=(color)
         @border_colors = case
-        when color.nil?
-          ["000000"] * 4
-        when String === color # all colors
-          [color, color, color, color]
-        when color.length == 2 # vert, horiz
-          [color[0], color[1], color[0], color[1]]
-        when color.length == 3 # top, horiz, bottom
-          [color[0], color[1], color[2], color[1]]
-        when color.length == 4 # top, right, bottom, left
-          [color[0], color[1], color[2], color[3]]
-        else
-          raise ArgumentError, ":border_color must be a string " +
-            "or an array [v,h] or [t,r,b,l]"
-        end
+                         when color.nil?
+                           ["000000"] * 4
+                         when String === color # all colors
+                           [color, color, color, color]
+                         when color.length == 2 # vert, horiz
+                           [color[0], color[1], color[0], color[1]]
+                         when color.length == 3 # top, horiz, bottom
+                           [color[0], color[1], color[2], color[1]]
+                         when color.length == 4 # top, right, bottom, left
+                           [color[0], color[1], color[2], color[3]]
+                         else
+                           raise ArgumentError, ":border_color must be a string " +
+                             "or an array [v,h] or [t,r,b,l]"
+                         end
       end
       alias_method :border_colors=, :border_color=
 
-      def border_top_color
-        @border_colors[0]
-      end
-
-      def border_top_color=(val)
-        @border_colors[0] = val
-      end
-
-      def border_top_color
-        @border_colors[0]
-      end
-
-      def border_top_color=(val)
-        @border_colors[0] = val
-      end
-
-      def border_right_color
-        @border_colors[1]
-      end
-
-      def border_right_color=(val)
-        @border_colors[1] = val
-      end
-
-      def border_bottom_color
-        @border_colors[2]
-      end
-
-      def border_bottom_color=(val)
-        @border_colors[2] = val
-      end
-
-      def border_left_color
-        @border_colors[3]
-      end
-
-      def border_left_color=(val)
-        @border_colors[3] = val
-      end
-
-      # Sets border widths on this cell. The argument can be one of:
-      #
-      # * an integer (sets all widths)
-      # * a two-element array [vertical, horizontal]
-      # * a three-element array [top, horizontal, bottom]
-      # * a four-element array [top, right, bottom, left]
-      #
-      def border_width=(width)
-        @border_widths = case
-        when width.nil?
-          ["000000"] * 4
-        when Numeric === width # all widths
-          [width, width, width, width]
-        when width.length == 2 # vert, horiz
-          [width[0], width[1], width[0], width[1]]
-        when width.length == 3 # top, horiz, bottom
-          [width[0], width[1], width[2], width[1]]
-        when width.length == 4 # top, right, bottom, left
-          [width[0], width[1], width[2], width[3]]
-        else
-          raise ArgumentError, ":border_width must be a string " +
-            "or an array [v,h] or [t,r,b,l]"
+        def border_top_color
+          @border_colors[0]
         end
-      end
-      alias_method :border_widths=, :border_width=
 
-      def border_top_width
-        @borders.include?(:top) ? @border_widths[0] : 0
-      end
+        def border_top_color=(val)
+          @border_colors[0] = val
+        end
 
-      def border_top_width=(val)
-        @border_widths[0] = val
-      end
+        def border_top_color
+          @border_colors[0]
+        end
 
-      def border_right_width
-        @borders.include?(:right) ? @border_widths[1] : 0
-      end
+        def border_top_color=(val)
+          @border_colors[0] = val
+        end
 
-      def border_right_width=(val)
-        @border_widths[1] = val
-      end
+        def border_right_color
+          @border_colors[1]
+        end
 
-      def border_bottom_width
-        @borders.include?(:bottom) ? @border_widths[2] : 0
-      end
+        def border_right_color=(val)
+          @border_colors[1] = val
+        end
 
-      def border_bottom_width=(val)
-        @border_widths[2] = val
-      end
+        def border_bottom_color
+          @border_colors[2]
+        end
 
-      def border_left_width
-        @borders.include?(:left) ? @border_widths[3] : 0
-      end
+        def border_bottom_color=(val)
+          @border_colors[2] = val
+        end
 
-      def border_left_width=(val)
-        @border_widths[3] = val
-      end
+        def border_left_color
+          @border_colors[3]
+        end
 
+        def border_left_color=(val)
+          @border_colors[3] = val
+        end
+
+        # Sets border widths on this cell. The argument can be one of:
+        #
+        # * an integer (sets all widths)
+        # * a two-element array [vertical, horizontal]
+        # * a three-element array [top, horizontal, bottom]
+        # * a four-element array [top, right, bottom, left]
+        #
+        def border_width=(width)
+          @border_widths = case
+                           when width.nil?
+                             ["000000"] * 4
+                           when Numeric === width # all widths
+                             [width, width, width, width]
+                           when width.length == 2 # vert, horiz
+                             [width[0], width[1], width[0], width[1]]
+                           when width.length == 3 # top, horiz, bottom
+                             [width[0], width[1], width[2], width[1]]
+                           when width.length == 4 # top, right, bottom, left
+                             [width[0], width[1], width[2], width[3]]
+                           else
+                             raise ArgumentError, ":border_width must be a string " +
+                               "or an array [v,h] or [t,r,b,l]"
+                           end
+        end
+        alias_method :border_widths=, :border_width=
+
+          def border_top_width
+            @borders.include?(:top) ? @border_widths[0] : 0
+          end
+
+          def border_top_width=(val)
+            @border_widths[0] = val
+          end
+
+          def border_right_width
+            @borders.include?(:right) ? @border_widths[1] : 0
+          end
+
+          def border_right_width=(val)
+            @border_widths[1] = val
+          end
+
+          def border_bottom_width
+            @borders.include?(:bottom) ? @border_widths[2] : 0
+          end
+
+          def border_bottom_width=(val)
+            @border_widths[2] = val
+          end
+
+          def border_left_width
+            @borders.include?(:left) ? @border_widths[3] : 0
+          end
+
+          def border_left_width=(val)
+            @border_widths[3] = val
+          end
+
+<<<<<<< HEAD
       protected
 
       # Sets the cell's minimum and maximum width. Deferred until requested
@@ -459,63 +459,72 @@ module Prawn
         @min_width ||= padding_left + padding_right
         @max_width ||= @pdf.bounds.width
       end
-
-      # Draws the cell's background color.
-      #
-      def draw_background(pt)
-        if @background_color
-          @pdf.mask(:fill_color) do
-            @pdf.fill_color @background_color
-            @pdf.fill_rectangle pt, width, height
+=======
+          # Sets the cell's minimum and maximum width. Deferred until requested
+          # because padding and size can change.
+          #
+          def set_width_constraints
+            @min_width ||= padding_left + padding_right
+            @max_width ||= @pdf.bounds.width
           end
+>>>>>>> 77b91c3... retrofit self registry of cell renderers with factory
+
+          # Draws the cell's background color.
+          #
+          def draw_background(pt)
+            if @background_color
+              @pdf.mask(:fill_color) do
+                @pdf.fill_color @background_color
+                @pdf.fill_rectangle pt, width, height
+              end
+            end
+          end
+
+          # Draws borders around the cell. Borders are centered on the bounds of
+          # the cell outside of any padding, so the caller is responsible for
+          # setting appropriate padding to ensure the border does not overlap with
+          # cell content.
+          #
+          def draw_borders(pt)
+            x, y = pt
+
+            @pdf.mask(:line_width, :stroke_color) do
+              @borders.each do |border|
+                idx = {:top => 0, :right => 1, :bottom => 2, :left => 3}[border]
+                border_color = @border_colors[idx]
+                border_width = @border_widths[idx]
+
+                next if border_width <= 0
+
+                # Left and right borders are drawn one-half border beyond the center
+                # of the corner, so that the corners end up square.
+                from, to = case border
+                           when :top
+                             [[x, y], [x+width, y]]
+                           when :bottom
+                             [[x, y-height], [x+width, y-height]]
+                           when :left
+                             [[x, y + (border_top_width / 2.0)],
+                              [x, y - height - (border_bottom_width / 2.0)]]
+                           when :right
+                             [[x+width, y + (border_top_width / 2.0)],
+                              [x+width, y - height - (border_bottom_width / 2.0)]]
+                           end
+
+                @pdf.line_width   = border_width
+                @pdf.stroke_color = border_color
+                @pdf.stroke_line(from, to)
+              end
+            end
+          end
+
+          # Draws cell content within the cell's bounding box. Must be implemented
+          # in subclasses.
+          #
+          def draw_content
+            raise NotImplementedError, "subclasses must implement draw_content"
+          end
+
         end
       end
-
-      # Draws borders around the cell. Borders are centered on the bounds of
-      # the cell outside of any padding, so the caller is responsible for
-      # setting appropriate padding to ensure the border does not overlap with
-      # cell content.
-      #
-      def draw_borders(pt)
-        x, y = pt
-
-        @pdf.mask(:line_width, :stroke_color) do
-          @borders.each do |border|
-            idx = {:top => 0, :right => 1, :bottom => 2, :left => 3}[border]
-            border_color = @border_colors[idx]
-            border_width = @border_widths[idx]
-
-            next if border_width <= 0
-
-            # Left and right borders are drawn one-half border beyond the center
-            # of the corner, so that the corners end up square.
-            from, to = case border
-                       when :top
-                         [[x, y], [x+width, y]]
-                       when :bottom
-                         [[x, y-height], [x+width, y-height]]
-                       when :left
-                         [[x, y + (border_top_width / 2.0)],
-                          [x, y - height - (border_bottom_width / 2.0)]]
-                       when :right
-                         [[x+width, y + (border_top_width / 2.0)],
-                          [x+width, y - height - (border_bottom_width / 2.0)]]
-                       end
-
-            @pdf.line_width   = border_width
-            @pdf.stroke_color = border_color
-            @pdf.stroke_line(from, to)
-          end
-        end
-      end
-
-      # Draws cell content within the cell's bounding box. Must be implemented
-      # in subclasses.
-      #
-      def draw_content
-        raise NotImplementedError, "subclasses must implement draw_content"
-      end
-
     end
-  end
-end
