@@ -31,8 +31,13 @@ module Prawn
           super
         end
 
+        # Catchall class will convert anything to string
+        def content=(new_content)
+          super(new_content.to_s)
+        end
+
         def self.can_render_with?(content)
-          content.kind_of? String
+          true
         end
 
         # Returns the font that will be used to draw this cell.

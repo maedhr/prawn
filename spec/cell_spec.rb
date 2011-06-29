@@ -1,6 +1,6 @@
 # encoding: utf-8
 
-require File.join(File.expand_path(File.dirname(__FILE__)), "spec_helper")  
+require File.join(File.expand_path(File.dirname(__FILE__)), "spec_helper")
 
 module CellHelpers
 
@@ -52,25 +52,25 @@ describe "Prawn::Table::Cell" do
     end
 
     it "should draw text at the given point plus padding, with the given " +
-       "size and style" do
+      "size and style" do
       @pdf.expects(:bounding_box).yields
       @pdf.expects(:move_down)
       @pdf.expects(:draw_text!).with { |text, options| text == "hello world" }
 
-      @pdf.cell(:content => "hello world", 
+      @pdf.cell(:content => "hello world",
                 :at => [10, 20],
                 :padding => [30, 40],
-                :size => 7, 
+                :size => 7,
                 :font_style => :bold)
     end
   end
-  
+
   describe "Prawn::Document#make_cell" do
     it "should not draw the cell" do
       Prawn::Table::Cell::Text.any_instance.expects(:draw).never
       @pdf.make_cell("text")
     end
-    
+
     it "should return a Cell" do
       @pdf.make_cell("text", :size => 7).should.be.a.kind_of Prawn::Table::Cell
     end
@@ -118,7 +118,7 @@ describe "Prawn::Table::Cell" do
     it "should return proper width with size set" do
       text = "text " * 4
       c = cell(:content => text, :size => 7)
-      c.width.should == 
+      c.width.should ==
         @pdf.width_of(text, :size => 7) + c.padding[1] + c.padding[3]
     end
 
@@ -165,7 +165,7 @@ describe "Prawn::Table::Cell" do
 
     it "should be calculated for text" do
       c = cell(:content => "text")
-      c.height.should == 
+      c.height.should ==
         @pdf.height_of("text", :width => @pdf.width_of("text")) +
         c.padding[0] + c.padding[3]
     end
@@ -178,7 +178,7 @@ describe "Prawn::Table::Cell" do
     it "should incorporate :padding when specified" do
       c = cell(:content => "text", :padding => [1, 2, 3, 4])
       c.height.should.be.close(1 + 3 +
-        @pdf.height_of("text", :width => @pdf.width_of("text")), 0.01)
+                               @pdf.height_of("text", :width => @pdf.width_of("text")), 0.01)
     end
 
     it "should allow height to be reset after it has been calculated" do
@@ -212,7 +212,7 @@ describe "Prawn::Table::Cell" do
       c = cell(:content => "text", :padding => 10)
       c.content_height.should == @pdf.height_of("text")
     end
-    
+
     it "content_height should exclude padding even with manual :height" do
       c = cell(:content => "text", :padding => 10, :height => 400)
       c.content_height.should.be.close(380, 0.01)
@@ -236,7 +236,7 @@ describe "Prawn::Table::Cell" do
       c = cell(:content => "text", :padding => [20, 30])
       c.padding.should == [20, 30, 20, 30]
     end
-    
+
     it "should accept [t,h,b]" do
       c = cell(:content => "text", :padding => [10, 20, 30])
       c.padding.should == [10, 20, 30, 20]
@@ -273,7 +273,7 @@ describe "Prawn::Table::Cell" do
     end
 
     it "should draw the background in the right place if cell is drawn at a " +
-       "different location" do
+      "different location" do
       @pdf.stubs(:mask).yields
       @pdf.expects(:mask).with(:fill_color).yields
 
@@ -379,7 +379,7 @@ describe "Prawn::Table::Cell" do
       @pdf.expects(:stroke_color=).with("ff00ff")
 
       c = @pdf.cell(:content => "text",
-        :border_color => %w[ff0000 00ff00 0000ff ff00ff])
+                    :border_color => %w[ff0000 00ff00 0000ff ff00ff])
 
       c.border_colors.should == %w[ff0000 00ff00 0000ff ff00ff]
     end
@@ -406,7 +406,7 @@ describe "Prawn::Table::Cell" do
       @pdf.expects(:line_width=).with(5)
 
       c = @pdf.cell(:content => "text",
-        :border_width => [2, 3, 4, 5])
+                    :border_width => [2, 3, 4, 5])
       c.border_widths.should == [2, 3, 4, 5]
     end
   end
@@ -465,7 +465,7 @@ describe "Prawn::Table::Cell" do
     include CellHelpers
 
     it "should allow only :font_style to be specified, defaulting to the " +
-       "document's font" do
+      "document's font" do
       c = cell(:content => "text", :font_style => :bold)
       c.font.name.should == 'Helvetica-Bold'
     end
@@ -487,7 +487,7 @@ describe "Prawn::Table::Cell" do
     end
 
     it "should use the metrics of the selected font (even if it is a variant " +
-       "of the document's font) to calculate width" do
+      "of the document's font) to calculate width" do
       c = cell(:content => "text", :font_style => :bold)
       font = @pdf.find_font('Helvetica-Bold')
       c.content_width.should == font.compute_width_of("text")

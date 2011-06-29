@@ -102,8 +102,6 @@ module Prawn
       #
       def self.make(pdf, content, options={})
         at = options.delete(:at) || [0, pdf.cursor]
-        content = content.to_s if content.nil? || content.kind_of?(Numeric) ||
-          content.kind_of?(Date)
 
         if content.is_a?(Hash)
           options.update(content)
@@ -113,10 +111,11 @@ module Prawn
         end
 
         cell_class = Prawn::Table::CellFactory.find_cell_for_content(content)
-        if cell_class
-          cell_class.new(pdf,at,options)
-        elsif content.kind_of? Prawn::Table::Cell
+
+        if content.kind_of? Prawn::Table::Cell
           content
+        elsif cell_class
+          cell_class.new(pdf,at,options)
         else
           raise ArgumentError, "Content type not recognized: #{content.inspect}"
         end

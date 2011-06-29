@@ -1,6 +1,6 @@
 # encoding: utf-8
 
-require File.join(File.expand_path(File.dirname(__FILE__)), "spec_helper")  
+require File.join(File.expand_path(File.dirname(__FILE__)), "spec_helper")
 require 'set'
 
 describe "Prawn::Table" do
@@ -30,7 +30,7 @@ describe "Prawn::Table" do
         data = [["foo","bar"],["baz",""]]
         @pdf.table(data)
       }.should.not.raise
-    end   
+    end
 
     it "should allow a table with a header but no body" do
       lambda { @pdf.table([["Header"]], :header => true) }.should.not.raise
@@ -97,9 +97,9 @@ describe "Prawn::Table" do
     end
 
     it "should select rows by number or range" do
-      Set.new(@table.row(0).map { |c| c.content }).should == 
+      Set.new(@table.row(0).map { |c| c.content }).should ==
         Set.new(%w[R0C0 R0C1])
-      Set.new(@table.rows(0..1).map { |c| c.content }).should == 
+      Set.new(@table.rows(0..1).map { |c| c.content }).should ==
         Set.new(%w[R0C0 R0C1 R1C0 R1C1])
     end
 
@@ -113,9 +113,9 @@ describe "Prawn::Table" do
     end
 
     it "should select columns by number or range" do
-      Set.new(@table.column(0).map { |c| c.content }).should == 
+      Set.new(@table.column(0).map { |c| c.content }).should ==
         Set.new(%w[R0C0 R1C0])
-      Set.new(@table.columns(0..1).map { |c| c.content }).should == 
+      Set.new(@table.columns(0..1).map { |c| c.content }).should ==
         Set.new(%w[R0C0 R0C1 R1C0 R1C1])
     end
 
@@ -133,7 +133,7 @@ describe "Prawn::Table" do
     end
 
     it "should accept a filter block, returning a cell proxy" do
-      @table.cells.filter { |c| c.content =~ /R0/ }.column(1).map{ |c| 
+      @table.cells.filter { |c| c.content =~ /R0/ }.column(1).map{ |c|
         c.content }.should == ["R0C1"]
     end
 
@@ -220,11 +220,11 @@ describe "Prawn::Table" do
       end
 
       it "should calculate unspecified column widths as "+
-         "(max(string_width) + 2*horizontal_padding)" do
+        "(max(string_width) + 2*horizontal_padding)" do
         hpad, fs = 3, 12
         columns = 2
         table = Prawn::Table.new( [%w[ foo b ], %w[d foobar]], @pdf,
-          :cell_style => { :padding => hpad, :size => fs } )
+                                  :cell_style => { :padding => hpad, :size => fs } )
 
         col0_width = @pdf.width_of("foo", :size => fs)
         col1_width = @pdf.width_of("foobar", :size => fs)
@@ -233,35 +233,35 @@ describe "Prawn::Table" do
       end
 
       it "should allow mixing autocalculated and preset"+
-         "column widths within a single table" do
+        "column widths within a single table" do
         hpad, fs = 10, 6
         stretchy_columns = 2
-        
+
         col0_width = 50
         col1_width = @pdf.width_of("foo", :size => fs)
         col2_width = @pdf.width_of("foobar", :size => fs)
         col3_width = 150
 
-        table = Prawn::Table.new( [%w[snake foo b apple], 
+        table = Prawn::Table.new( [%w[snake foo b apple],
                                    %w[kitten d foobar banana]], @pdf,
-          :cell_style => { :padding => hpad, :size => fs }) do
+                                  :cell_style => { :padding => hpad, :size => fs }) do
 
           column(0).width = col0_width
           column(3).width = col3_width
         end
 
-        table.width.should == col1_width + col2_width + 
-                              2*stretchy_columns*hpad + 
-                              col0_width + col3_width
+        table.width.should == col1_width + col2_width +
+          2*stretchy_columns*hpad +
+          col0_width + col3_width
       end
 
       it "should not exceed the maximum width of the margin_box" do
         expected_width = @pdf.margin_box.width
         data = [
-          ['This is a column with a lot of text that should comfortably exceed '+
-          'the width of a normal document margin_box width', 'Some more text', 
-          'and then some more', 'Just a bit more to be extra sure']
-        ]
+                ['This is a column with a lot of text that should comfortably exceed '+
+                 'the width of a normal document margin_box width', 'Some more text',
+                 'and then some more', 'Just a bit more to be extra sure']
+               ]
         table = Prawn::Table.new(data, @pdf)
 
         table.width.should == expected_width
@@ -271,23 +271,23 @@ describe "Prawn::Table" do
         "manual widths specified" do
         expected_width = @pdf.margin_box.width
         data = [
-          ['This is a column with a lot of text that should comfortably exceed '+
-          'the width of a normal document margin_box width', 'Some more text', 
-          'and then some more', 'Just a bit more to be extra sure']
-        ]
+                ['This is a column with a lot of text that should comfortably exceed '+
+                 'the width of a normal document margin_box width', 'Some more text',
+                 'and then some more', 'Just a bit more to be extra sure']
+               ]
         table = Prawn::Table.new(data, @pdf) { column(1).width = 100 }
 
         table.width.should == expected_width
       end
-      
+
       it "scales down only the non-preset column widths when the natural width" +
         "exceeds the maximum width of the margin_box" do
         expected_width = @pdf.margin_box.width
         data = [
-          ['This is a column with a lot of text that should comfortably exceed '+
-          'the width of a normal document margin_box width', 'Some more text', 
-          'and then some more', 'Just a bit more to be extra sure']
-        ]
+                ['This is a column with a lot of text that should comfortably exceed '+
+                 'the width of a normal document margin_box width', 'Some more text',
+                 'and then some more', 'Just a bit more to be extra sure']
+               ]
         table = Prawn::Table.new(data, @pdf) { column(1).width = 100; column(3).width = 50 }
 
         table.width.should == expected_width
@@ -332,9 +332,9 @@ describe "Prawn::Table" do
 
       it "should be the width of the :width parameter" do
         expected_width = 300
-        table = Prawn::Table.new( [%w[snake foo b apple], 
+        table = Prawn::Table.new( [%w[snake foo b apple],
                                    %w[kitten d foobar banana]], @pdf,
-                                 :width => expected_width)
+                                  :width => expected_width)
 
         table.width.should == expected_width
       end
@@ -342,10 +342,10 @@ describe "Prawn::Table" do
       it "should not exceed the :width option" do
         expected_width = 400
         data = [
-          ['This is a column with a lot of text that should comfortably exceed '+
-          'the width of a normal document margin_box width', 'Some more text', 
-          'and then some more', 'Just a bit more to be extra sure']
-        ]
+                ['This is a column with a lot of text that should comfortably exceed '+
+                 'the width of a normal document margin_box width', 'Some more text',
+                 'and then some more', 'Just a bit more to be extra sure']
+               ]
         table = Prawn::Table.new(data, @pdf, :width => expected_width)
 
         table.width.should == expected_width
@@ -354,10 +354,10 @@ describe "Prawn::Table" do
       it "should not exceed the :width option even with manual widths specified" do
         expected_width = 400
         data = [
-          ['This is a column with a lot of text that should comfortably exceed '+
-          'the width of a normal document margin_box width', 'Some more text', 
-          'and then some more', 'Just a bit more to be extra sure']
-        ]
+                ['This is a column with a lot of text that should comfortably exceed '+
+                 'the width of a normal document margin_box width', 'Some more text',
+                 'and then some more', 'Just a bit more to be extra sure']
+               ]
         table = Prawn::Table.new(data, @pdf, :width => expected_width) do
           column(1).width = 100
         end
@@ -367,7 +367,7 @@ describe "Prawn::Table" do
 
       # TODO: pending colspan
       xit "should calculate unspecified column widths even " +
-         "with colspan cells declared" do
+        "with colspan cells declared" do
         pdf = Prawn::Document.new
         hpad, fs = 3, 5
         columns  = 3
@@ -375,15 +375,15 @@ describe "Prawn::Table" do
         data = [ [ { :text => 'foo', :colspan => 2 }, "foobar" ],
                  [ "foo", "foo", "foo" ] ]
         table = Prawn::Table.new( data, pdf,
-          :horizontal_padding => hpad,
-          :font_size => fs )
+                                  :horizontal_padding => hpad,
+                                  :font_size => fs )
 
         col0_width = pdf.width_of("foo",    :size => fs) # cell 1, 0
         col1_width = pdf.width_of("foo",    :size => fs) # cell 1, 1
         col2_width = pdf.width_of("foobar", :size => fs) # cell 0, 1 (at col 2)
 
         table.width.should == col0_width.ceil + col1_width.ceil +
-                              col2_width.ceil + 2*columns*hpad
+          col2_width.ceil + 2*columns*hpad
       end
     end
 
@@ -406,9 +406,9 @@ describe "Prawn::Table" do
         (t.height - 10).should.be < h*1.5
       end
 
-      it "should have a height of n rows" do  
+      it "should have a height of n rows" do
         data = [["foo"],["bar"],["baaaz"]]
-           
+
         vpad = 4
         origin = @pdf.y
         @pdf.table data, :cell_style => { :padding => vpad }
@@ -419,7 +419,7 @@ describe "Prawn::Table" do
 
         num_rows = data.length
         table_height.should.be.close(
-          num_rows * font_height + 2*vpad*num_rows, 0.001 )
+                                     num_rows * font_height + 2*vpad*num_rows, 0.001 )
       end
 
     end
@@ -456,7 +456,7 @@ describe "Prawn::Table" do
     end
 
     it "should not start a new page to gain height when at the top of " +
-       "a bounding box, even if stretchy" do
+      "a bounding box, even if stretchy" do
       Prawn::Document.new do
         bounding_box([bounds.left, bounds.top - 20], :width => 400) do
           table([[ (1..80).map{ |i| "Line #{i}" }.join("\n"), "Column 2" ]])
@@ -465,7 +465,7 @@ describe "Prawn::Table" do
     end
 
     it "should still break to the next page if in a stretchy bounding box " +
-       "but not at the top" do
+      "but not at the top" do
       Prawn::Document.new do
         bounding_box([bounds.left, bounds.top - 20], :width => 400) do
           text "Hello"
@@ -485,11 +485,12 @@ describe "Prawn::Table" do
       output.pages[0][:strings].should.be.empty
       output.pages[1][:strings].should == ["Header", "Body"]
     end
+
   end
 
   describe "#style" do
     it "should send #style to its first argument, passing the style hash and" +
-        " block" do
+      " block" do
 
       stylable = stub()
       stylable.expects(:style).with(:foo => :bar).once.yields
@@ -505,7 +506,7 @@ describe "Prawn::Table" do
     it "should default to {} for the hash argument" do
       stylable = stub()
       stylable.expects(:style).with({}).once
-      
+
       Prawn::Document.new do
         table([["x"]]) { style(stylable) }
       end
@@ -523,12 +524,12 @@ describe "Prawn::Table" do
     it "should ignore headers" do
       data = [["header"], ["foo"], ["bar"], ["baz"]]
       pdf = Prawn::Document.new
-      t = pdf.table(data, :header => true, 
+      t = pdf.table(data, :header => true,
                     :row_colors => ['cccccc', 'ffffff']) do
         row(0).background_color = '333333'
       end
 
-      t.cells.map{|x| x.background_color}.should == 
+      t.cells.map{|x| x.background_color}.should ==
         %w[333333 cccccc ffffff cccccc]
     end
   end
@@ -540,7 +541,7 @@ describe "Prawn::Table" do
 
     it "should set the x-position of each cell based on widths" do
       @table = @pdf.table([["foo", "bar", "baz"]])
-      
+
       x = 0
       (0..2).each do |col|
         cell = @table.cells[0, col]
@@ -602,7 +603,7 @@ describe "Prawn::Table" do
       data = [["a", "b"], ["foo","bar"],["baz","bang"]]
       @pdf = Prawn::Document.new
       @pdf.table(data, :header => true)
-      output = PDF::Inspector::Text.analyze(@pdf.render)   
+      output = PDF::Inspector::Text.analyze(@pdf.render)
       output.strings.should == data.flatten
     end
 
@@ -611,7 +612,7 @@ describe "Prawn::Table" do
       headers = ["baz","foobar"]
       @pdf = Prawn::Document.new
       @pdf.table([headers] + data, :header => true)
-      output = PDF::Inspector::Text.analyze(@pdf.render)   
+      output = PDF::Inspector::Text.analyze(@pdf.render)
       output.strings.should == headers + data.flatten[0..-3] + headers +
         data.flatten[-2..-1]
     end
@@ -620,7 +621,7 @@ describe "Prawn::Table" do
       @pdf = Prawn::Document.new
       @pdf.y = 0
       @pdf.table([["Header"], ["Body"]], :header => true)
-      output = PDF::Inspector::Text.analyze(@pdf.render)   
+      output = PDF::Inspector::Text.analyze(@pdf.render)
       output.strings.should == ["Header", "Body"]
     end
   end
@@ -645,7 +646,7 @@ describe "Prawn::Table" do
     it "has a subtable accessor" do
       @table.cells[0, 0].subtable.should == @subtable
     end
-    
+
     it "determines its dimensions from the subtable" do
       @table.cells[0, 0].width.should == @subtable.width
       @table.cells[0, 0].height.should == @subtable.height
@@ -654,12 +655,12 @@ describe "Prawn::Table" do
   end
 
   describe "An invalid table" do
-    
+
     before(:each) do
       @pdf = Prawn::Document.new
       @bad_data = ["Single Nested Array"]
     end
-    
+
     it "should raise error when invalid table data is given" do
       assert_raises(Prawn::Errors::InvalidTableData) do
         @pdf.table(@bad_data)
@@ -672,7 +673,7 @@ describe "Prawn::Table" do
         @pdf = Prawn::Document.new
         @pdf.table(data)
       }.should.raise( Prawn::Errors::EmptyTable )
-    end   
+    end
 
     it "should raise an EmptyTableError with nil table data" do
       lambda {
@@ -680,7 +681,7 @@ describe "Prawn::Table" do
         @pdf = Prawn::Document.new
         @pdf.table(data)
       }.should.raise( Prawn::Errors::EmptyTable )
-    end   
+    end
 
   end
 
