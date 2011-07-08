@@ -449,7 +449,6 @@ module Prawn
             @border_widths[3] = val
           end
 
-<<<<<<< HEAD
       protected
 
       # Sets the cell's minimum and maximum width. Deferred until requested
@@ -459,15 +458,6 @@ module Prawn
         @min_width ||= padding_left + padding_right
         @max_width ||= @pdf.bounds.width
       end
-=======
-          # Sets the cell's minimum and maximum width. Deferred until requested
-          # because padding and size can change.
-          #
-          def set_width_constraints
-            @min_width ||= padding_left + padding_right
-            @max_width ||= @pdf.bounds.width
-          end
->>>>>>> 77b91c3... retrofit self registry of cell renderers with factory
 
           # Draws the cell's background color.
           #
