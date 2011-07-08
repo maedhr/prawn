@@ -270,9 +270,7 @@ module Prawn
          canvas { image(@background, :at => bounds.top_left) } if @background
          @y = @bounding_box.absolute_top
 
-         float do
-           state.on_page_create_action(self)
-         end
+         state.on_page_create_action(self)
        end
 
      end
