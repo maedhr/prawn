@@ -65,7 +65,7 @@ module Prawn
         #
         def natural_content_height
           with_font do
-            b = text_box(:width => content_width + FPTolerance)
+            b = text_box(:width => spanned_content_width + FPTolerance)
             b.render(:dry_run => true)
             b.height + b.line_gap
           end
@@ -77,14 +77,12 @@ module Prawn
           with_font do
             @pdf.move_down((@pdf.font.line_gap + @pdf.font.descender)/2)
             with_text_color do
-              text_box(:width => content_width + FPTolerance,
-                       :height => content_height + FPTolerance,
+              text_box(:width => spanned_content_width + FPTolerance,
+                       :height => spanned_content_height + FPTolerance,
                        :at => [0, @pdf.cursor]).render
             end
           end
         end
-
-        protected
 
         def set_width_constraints
           # Sets a reasonable minimum width. If the cell has any content, make
@@ -94,6 +92,8 @@ module Prawn
           @min_width ||= padding_left + padding_right + min_content_width
           super
         end
+
+        protected
 
         def with_font
           @pdf.save_font do
@@ -131,12 +131,7 @@ module Prawn
         # Returns the width of +text+ under the given text options.
         #
         def styled_width_of(text)
-          with_font do
-            options = {}
-            options[:size] = @text_options[:size] if @text_options[:size]
-
-            @pdf.font.compute_width_of(text, options)
-          end
+          @pdf.width_of(text, @text_options)
         end
 
       end

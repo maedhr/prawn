@@ -222,19 +222,19 @@ module Prawn
 
       # Upper right hand corner
       curve_to [x,  y + r2],
-        :bounds => [[x + r1, y + l1], [x + l2, y + r2]]
+        :bounds => [[x + r1, y + l2], [x + l1, y + r2]]
 
       # Upper left hand corner
       curve_to [x - r1, y],
-        :bounds => [[x - l2, y + r2], [x - r1, y + l1]]
+        :bounds => [[x - l1, y + r2], [x - r1, y + l2]]
 
       # Lower left hand corner
       curve_to [x, y - r2],
-        :bounds => [[x - r1, y - l1], [x - l2, y - r2]]
+        :bounds => [[x - r1, y - l2], [x - l1, y - r2]]
 
       # Lower right hand corner
       curve_to [x + r1, y],
-        :bounds => [[x + l2, y - r2], [x + r1, y - l1]]
+        :bounds => [[x + l1, y - r2], [x + r1, y - l2]]
 
       move_to(x, y)
     end
@@ -307,18 +307,28 @@ module Prawn
 
     # Closes and fills the current path. See Graphics::Color for color details.
     #
-    def fill
+    # If the option :fill_rule => :even_odd is specified, Prawn will use the
+    # even-odd rule to fill the path. Otherwise, the nonzero winding number rule
+    # will be used. See the PDF reference, "Graphics -> Path Construction and
+    # Painting -> Clipping Path Operators" for details on the difference.
+    #
+    def fill(options={})
       yield if block_given?
-      add_content "f"
+      add_content(options[:fill_rule] == :even_odd ? "f*" : "f")
     end
 
     # Closes, fills, and strokes the current path. If a block is provided,
     # yields to the block before closing the path. See Graphics::Color for
     # color details.
     #
-    def fill_and_stroke
+    # If the option :fill_rule => :even_odd is specified, Prawn will use the
+    # even-odd rule to fill the path. Otherwise, the nonzero winding number rule
+    # will be used. See the PDF reference, "Graphics -> Path Construction and
+    # Painting -> Clipping Path Operators" for details on the difference.
+    #
+    def fill_and_stroke(options={})
       yield if block_given?
-      add_content "b"
+      add_content(options[:fill_rule] == :even_odd ? "b*" : "b")
     end
 
     # Closes the current path.

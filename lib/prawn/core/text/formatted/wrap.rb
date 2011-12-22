@@ -9,7 +9,8 @@ module Prawn
 
           def initialize(array, options)
             @line_wrap = Prawn::Core::Text::Formatted::LineWrap.new
-            @arranger = Prawn::Core::Text::Formatted::Arranger.new(@document)
+            @arranger = Prawn::Core::Text::Formatted::Arranger.new(@document,
+              :kerning => options[:kerning])
           end
           
 
@@ -38,6 +39,9 @@ module Prawn
 
             stop = false
             while !stop
+              # wrap before testing if enough height for this line because the
+              # height of the highest fragment on this line will be used to
+              # determine the line height
               @line_wrap.wrap_line(:document => @document,
                                    :kerning => @kerning,
                                    :width => available_width,

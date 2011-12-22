@@ -9,13 +9,6 @@
 module Prawn
   class Table
 
-    # Returns a Cells object that can be used to select and style cells. See
-    # the Cells documentation for things you can do with cells.
-    #
-    def cells
-      @cell_proxy ||= Cells.new(@cells)
-    end
-
     # Selects the given rows (0-based) for styling. Returns a Cells object --
     # see the documentation on Cells for things you can do with cells.
     #
@@ -55,7 +48,9 @@ module Prawn
       def rows(row_spec)
         index_cells unless @indexed
         row_spec = transform_spec(row_spec, @row_count)
-        Cells.new(@rows[row_spec] ||= select{ |c| row_spec === c.row })
+        Cells.new(@rows[row_spec] ||= select { |c|
+                    row_spec.respond_to?(:include?) ?
+                      row_spec.include?(c.row) : row_spec === c.row })
       end
       alias_method :row, :rows
       
@@ -69,7 +64,9 @@ module Prawn
       def columns(col_spec)
         index_cells unless @indexed
         col_spec = transform_spec(col_spec, @column_count)
-        Cells.new(@columns[col_spec] ||= select{ |c| col_spec === c.column })
+        Cells.new(@columns[col_spec] ||= select { |c|
+                    col_spec.respond_to?(:include?) ? 
+                      col_spec.include?(c.column) : col_spec === c.column })
       end
       alias_method :column, :columns
 
@@ -91,6 +88,16 @@ module Prawn
         find { |c| c.row == row && c.column == col }
       end
 
+      # Puts a cell in the collection at the given position. Internal use only.
+      #
+      def []=(row, col, cell) # :nodoc:
+        cell.extend(Cell::InTable)
+        cell.row = row
+        cell.column = col
+
+        self << cell
+      end
+
       # Supports setting multiple properties at once.
       #
       #   table.cells.style(:padding => 0, :border_width => 2)
@@ -106,51 +113,34 @@ module Prawn
       #   table.cells.style { |cell| cell.border_width += 12 }
       #
       def style(options={}, &block)
-        each { |cell| cell.style(options, &block) }
+        each do |cell|
+          next if cell.is_a?(Cell::SpanDummy)
+          cell.style(options, &block)
+        end
       end
 
       # Returns the total width of all columns in the selected set.
       #
       def width
-        column_widths = {}
-        each do |cell| 
-          column_widths[cell.column] = 
-            [column_widths[cell.column], cell.width].compact.max
-        end
-        column_widths.values.inject(0) { |sum, width| sum + width }
+        aggregate_cell_values(:column, :width_ignoring_span, :max)
       end
 
       # Returns minimum width required to contain cells in the set.
       #
       def min_width
-        column_min_widths = {}
-        each do |cell| 
-          column_min_widths[cell.column] = 
-            [column_min_widths[cell.column], cell.min_width].compact.max
-        end
-        column_min_widths.values.inject(0) { |sum, width| sum + width }
+        aggregate_cell_values(:column, :avg_spanned_min_width, :max)
       end
 
       # Returns maximum width that can contain cells in the set.
       #
       def max_width
-        column_max_widths = {}
-        each do |cell| 
-          column_max_widths[cell.column] = 
-            [column_max_widths[cell.column], cell.max_width].compact.min
-        end
-        column_max_widths.values.inject(0) { |sum, width| sum + width }
+        aggregate_cell_values(:column, :max_width_ignoring_span, :min)
       end
 
       # Returns the total height of all rows in the selected set.
       #
       def height
-        row_heights = {}
-        each do |cell| 
-          row_heights[cell.row] = 
-            [row_heights[cell.row], cell.height].compact.max
-        end
-        row_heights.values.inject(0) { |sum, width| sum + width }
+        aggregate_cell_values(:row, :height_ignoring_span, :max)
       end
 
       # Supports setting arbitrary properties on a group of cells.
@@ -158,7 +148,11 @@ module Prawn
       #   table.cells.row(3..6).background_color = 'cc0000'
       #
       def method_missing(id, *args, &block)
-        each { |c| c.send(id, *args, &block) }
+        if id.to_s =~ /=\z/
+          each { |c| c.send(id, *args, &block) }
+        else
+          super
+        end
       end
 
       protected
@@ -185,6 +179,19 @@ module Prawn
         @column_count = @columns.size
 
         @indexed = true
+      end
+
+      # Sum up a min/max value over rows or columns in the cells selected.
+      # Takes the min/max (per +aggregate+) of the result of sending +meth+ to
+      # each cell, grouped by +row_or_column+.
+      #
+      def aggregate_cell_values(row_or_column, meth, aggregate)
+        values = {}
+        each do |cell|
+          index = cell.send(row_or_column)
+          values[index] = [values[index], cell.send(meth)].compact.send(aggregate)
+        end
+        values.values.inject(0, &:+)
       end
 
       # Transforms +spec+, a column / row specification, into an object that

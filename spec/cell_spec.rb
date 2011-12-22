@@ -5,7 +5,6 @@ require File.join(File.expand_path(File.dirname(__FILE__)), "spec_helper")
 module CellHelpers
 
   # Build, but do not draw, a cell on @pdf.
-  # TODO: differentiate class based on :content.
   def cell(options={})
     at = options[:at] || [0, @pdf.cursor]
     Prawn::Table::Cell::Text.new(@pdf, at, options)
@@ -491,6 +490,68 @@ describe "Prawn::Table::Cell" do
       c = cell(:content => "text", :font_style => :bold)
       font = @pdf.find_font('Helvetica-Bold')
       c.content_width.should == font.compute_width_of("text")
+    end
+
+    it "should properly calculate inline-formatted text" do
+      c = cell(:content => "<b>text</b>", :inline_format => true)
+      font = @pdf.find_font('Helvetica-Bold')
+      c.content_width.should == font.compute_width_of("text")
+    end
+  end
+
+end
+
+describe "Image cells" do
+  before(:each) do
+    create_pdf
+  end
+
+  describe "with default options" do
+    before(:each) do
+      @cell = Prawn::Table::Cell.make(@pdf,
+        :image => "#{Prawn::DATADIR}/images/prawn.png")
+    end
+
+    it "should create a Cell::Image" do
+      @cell.should.be.a.kind_of(Prawn::Table::Cell::Image)
+    end
+
+    it "should pull the natural width and height from the image" do
+      @cell.natural_content_width.should == 141
+      @cell.natural_content_height.should == 142
+    end
+  end
+
+  describe "hash syntax" do
+    before(:each) do
+      @table = @pdf.make_table([[{
+        :image => "#{Prawn::DATADIR}/images/prawn.png",
+        :scale => 2,
+        :fit => [100, 200],
+        :image_width => 123,
+        :image_height => 456,
+        :position => :center,
+        :vposition => :center
+      }]])
+      @cell = @table.cells[0, 0]
+    end
+
+
+    it "should create a Cell::Image" do
+      @cell.should.be.a.kind_of(Prawn::Table::Cell::Image)
+    end
+
+    it "should pass through image options" do
+      @pdf.expects(:embed_image).checking do |_, _, options|
+        options[:scale].should == 2
+        options[:fit].should == [100, 200]
+        options[:width].should == 123
+        options[:height].should == 456
+        options[:position].should == :center
+        options[:vposition].should == :center
+      end
+
+      @table.draw
     end
   end
 

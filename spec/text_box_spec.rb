@@ -74,7 +74,7 @@ describe "Text::Box" do
     @pdf.text_direction(:rtl)
     @pdf.text_direction = :rtl
     @pdf.text_direction = :rtl
-    @pdf.font("#{Prawn::BASEDIR}/data/fonts/gkai00mp.ttf", :size => 16) do
+    @pdf.font("#{Prawn::DATADIR}/fonts/gkai00mp.ttf", :size => 16) do
       @pdf.text "写个小"
     end
     text = PDF::Inspector::Text.analyze(@pdf.render)
@@ -184,6 +184,37 @@ describe "Text::Box#height with leading" do
   end
 end
 
+describe "Text::Box with :draw_text_callback" do
+  before(:each) { create_pdf }
+
+  it "hits the callback whenever text is drawn" do
+    draw_block = stub()
+    draw_block.expects(:kick).with("this text is long enough to")
+    draw_block.expects(:kick).with("span two lines")
+
+    @pdf.text_box "this text is long enough to span two lines",
+      :width => 150,
+      :draw_text_callback => lambda { |text, _| draw_block.kick(text) }
+  end
+
+  it "hits the callback once per fragment for :inline_format" do
+    draw_block = stub()
+    draw_block.expects(:kick).with("this text has ")
+    draw_block.expects(:kick).with("fancy")
+    draw_block.expects(:kick).with(" formatting")
+
+    @pdf.text_box "this text has <b>fancy</b> formatting",
+      :inline_format => true, :width => 500,
+      :draw_text_callback => lambda { |text, _| draw_block.kick(text) }
+  end
+
+  it "does not call #draw_text!" do
+    @pdf.expects(:draw_text!).never
+    @pdf.text_box "some text", :width => 500,
+      :draw_text_callback => lambda { |_, _| }
+  end
+end
+
 describe "Text::Box#valid_options" do
   it "should return an array" do
     create_pdf
@@ -264,6 +295,23 @@ describe "Text::Box#render(:valign => :bottom)" do
     text = "this is center text " * 12
     options = { :width => 162,
                 :valign => :bottom,
+                :document => @pdf }
+    text_box = Prawn::Text::Box.new(text, options)
+
+    text_box.render(:dry_run => true)
+    original_at = text_box.at.dup
+
+    text_box.render(:dry_run => true)
+    text_box.at.should == original_at
+  end
+end
+
+describe "Text::Box#render(:valign => :center)" do
+  it "#at should be the same from one dry run to the next" do
+    create_pdf
+    text = "this is center text " * 12
+    options = { :width => 162,
+                :valign => :center,
                 :document => @pdf }
     text_box = Prawn::Text::Box.new(text, options)
 
@@ -600,7 +648,7 @@ describe "Text::Box printing UTF-8 string with higher bit characters" do
       :height => bounding_height,
       :document => @pdf
     }
-    file = "#{Prawn::BASEDIR}/data/fonts/Action Man.dfont"
+    file = "#{Prawn::DATADIR}/fonts/Action Man.dfont"
     @pdf.font_families["Action Man"] = {
       :normal      => { :file => file, :font => "ActionMan" },
       :italic      => { :file => file, :font => "ActionMan-Italic" },
@@ -783,7 +831,7 @@ describe "Text::Box with a solid block of Chinese characters" do
       :height => 162.0,
       :document => @pdf
     }
-    @pdf.font "#{Prawn::BASEDIR}/data/fonts/gkai00mp.ttf"
+    @pdf.font "#{Prawn::DATADIR}/fonts/gkai00mp.ttf"
     @options[:overflow] = :truncate
     text_box = Prawn::Text::Box.new(@text, @options)
     text_box.render

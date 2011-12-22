@@ -36,10 +36,9 @@ describe "Prawn::Table" do
       lambda { @pdf.table([["Header"]], :header => true) }.should.not.raise
     end
 
-    # TODO: pending colspan
-    xit "should accurately count columns from data" do
+    it "should accurately count columns from data" do
       # First data row may contain colspan which would hide true column count
-      data = [["Name:",{:text => "Some very long name", :colspan => 5}]]
+      data = [["Name:", {:content => "Some very long name", :colspan => 5}]]
       pdf = Prawn::Document.new
       table = Prawn::Table.new data, pdf
       table.column_widths.length.should == 6
@@ -103,6 +102,11 @@ describe "Prawn::Table" do
         Set.new(%w[R0C0 R0C1 R1C0 R1C1])
     end
 
+    it "should select rows by array" do
+      Set.new(@table.rows([0, 1]).map { |c| c.content }).should == 
+        Set.new(%w[R0C0 R0C1 R1C0 R1C1])
+    end
+
     it "should allow negative row selectors" do
       Set.new(@table.row(-1).map { |c| c.content }).should ==
         Set.new(%w[R1C0 R1C1])
@@ -116,6 +120,11 @@ describe "Prawn::Table" do
       Set.new(@table.column(0).map { |c| c.content }).should ==
         Set.new(%w[R0C0 R1C0])
       Set.new(@table.columns(0..1).map { |c| c.content }).should ==
+        Set.new(%w[R0C0 R0C1 R1C0 R1C1])
+    end
+
+    it "should select columns by array" do
+      Set.new(@table.columns([0, 1]).map { |c| c.content }).should == 
         Set.new(%w[R0C0 R0C1 R1C0 R1C1])
     end
 
@@ -148,6 +157,12 @@ describe "Prawn::Table" do
 
       @table.cells[0, 0].height.should == 200
       @table.cells[1, 0].height.should == 100
+    end
+
+    it "should ignore non-setter methods" do
+      lambda {
+        @table.cells.content_width
+      }.should.raise(NoMethodError)
     end
 
     it "should accept the style method, proxying its calls to the cells" do
@@ -219,6 +234,13 @@ describe "Prawn::Table" do
         table.width.should == 300
       end
 
+      it "should accept Numeric for column_widths" do
+        table = Prawn::Table.new([%w[ a b c ], %w[d e f]], @pdf) do |t|
+          t.column_widths = 50
+        end
+        table.width.should == 150
+      end
+
       it "should calculate unspecified column widths as "+
         "(max(string_width) + 2*horizontal_padding)" do
         hpad, fs = 3, 12
@@ -253,6 +275,28 @@ describe "Prawn::Table" do
         table.width.should == col1_width + col2_width +
           2*stretchy_columns*hpad +
           col0_width + col3_width
+      end
+
+      it "should preserve all manually requested column widths" do
+        col0_width = 50
+        col1_width = 20
+        col3_width = 60
+
+        table = Prawn::Table.new( [["snake", "foo", "b", 
+                                      "some long, long text that will wrap"],
+                                   %w[kitten d foobar banana]], @pdf,
+                                 :width => 150) do
+
+          column(0).width = col0_width
+          column(1).width = col1_width
+          column(3).width = col3_width
+        end
+
+        table.draw
+
+        table.column(0).width.should == col0_width
+        table.column(1).width.should == col1_width
+        table.column(3).width.should == col3_width
       end
 
       it "should not exceed the maximum width of the margin_box" do
@@ -365,25 +409,26 @@ describe "Prawn::Table" do
         table.width.should == expected_width
       end
 
-      # TODO: pending colspan
-      xit "should calculate unspecified column widths even " +
-        "with colspan cells declared" do
+      it "should calculate unspecified column widths even " +
+         "with colspan cells declared" do
         pdf = Prawn::Document.new
         hpad, fs = 3, 5
         columns  = 3
 
-        data = [ [ { :text => 'foo', :colspan => 2 }, "foobar" ],
+        data = [ [ { :content => 'foo', :colspan => 2 }, "foobar" ],
                  [ "foo", "foo", "foo" ] ]
         table = Prawn::Table.new( data, pdf,
-                                  :horizontal_padding => hpad,
-                                  :font_size => fs )
+          :cell_style => {
+            :padding_left => hpad, :padding_right => hpad,
+            :size => fs
+          })
 
         col0_width = pdf.width_of("foo",    :size => fs) # cell 1, 0
         col1_width = pdf.width_of("foo",    :size => fs) # cell 1, 1
         col2_width = pdf.width_of("foobar", :size => fs) # cell 0, 1 (at col 2)
 
-        table.width.should == col0_width.ceil + col1_width.ceil +
-          col2_width.ceil + 2*columns*hpad
+        table.width.should == col0_width + col1_width +
+                              col2_width + 2*columns*hpad
       end
     end
 
@@ -422,6 +467,41 @@ describe "Prawn::Table" do
                                      num_rows * font_height + 2*vpad*num_rows, 0.001 )
       end
 
+    end
+
+    describe "position" do
+      it "should center tables with :position => :center" do
+        @pdf.expects(:bounding_box).with do |(x, y), opts|
+          expected = (@pdf.bounds.width - 500) / 2.0
+          (x - expected).abs < 0.001
+        end
+
+        @pdf.table([["foo"]], :column_widths => 500, :position => :center)
+      end
+
+      it "should right-align tables with :position => :right" do
+        @pdf.expects(:bounding_box).with do |(x, y), opts|
+          expected = @pdf.bounds.width - 500
+          (x - expected).abs < 0.001
+        end
+
+        @pdf.table([["foo"]], :column_widths => 500, :position => :right)
+      end
+
+      it "should accept a Numeric" do
+        @pdf.expects(:bounding_box).with do |(x, y), opts|
+          expected = 123
+          (x - expected).abs < 0.001
+        end
+
+        @pdf.table([["foo"]], :column_widths => 500, :position => 123)
+      end
+
+      it "should raise an ArgumentError on unknown :position" do
+        lambda do
+          @pdf.table([["foo"]], :position => :bratwurst)
+        end.should.raise(ArgumentError)
+      end
     end
 
   end
@@ -486,6 +566,36 @@ describe "Prawn::Table" do
       output.pages[1][:strings].should == ["Header", "Body"]
     end
 
+    it "should draw background before borders, but only within pages" do
+      seq = sequence("drawing_order")
+
+      @pdf = Prawn::Document.new
+
+      # give enough room for only the first row
+      @pdf.y = @pdf.bounds.absolute_bottom + 30
+      t = @pdf.make_table([["A", "B"],
+                           ["C", "D"]],
+            :cell_style => {:background_color => 'ff0000'})
+
+      ca = t.cells[0, 0]
+      cb = t.cells[0, 1]
+      cc = t.cells[1, 0]
+      cd = t.cells[1, 1]
+
+      # All backgrounds should draw before any borders on page 1...
+      ca.expects(:draw_background).in_sequence(seq)
+      cb.expects(:draw_background).in_sequence(seq)
+      ca.expects(:draw_borders).in_sequence(seq)
+      cb.expects(:draw_borders).in_sequence(seq)
+      # ...and page 2
+      @pdf.expects(:start_new_page).in_sequence(seq)
+      cc.expects(:draw_background).in_sequence(seq)
+      cd.expects(:draw_background).in_sequence(seq)
+      cc.expects(:draw_borders).in_sequence(seq)
+      cd.expects(:draw_borders).in_sequence(seq)
+
+      t.draw
+    end
   end
 
   describe "#style" do
@@ -531,6 +641,44 @@ describe "Prawn::Table" do
 
       t.cells.map{|x| x.background_color}.should ==
         %w[333333 cccccc ffffff cccccc]
+    end
+
+    it "stripes rows consistently from page to page, skipping header rows" do
+      data = [["header"]] + [["foo"]] * 70
+      pdf = Prawn::Document.new
+      t = pdf.make_table(data, :header => true,
+          :row_colors => ['cccccc', 'ffffff']) do
+        cells.padding = 0
+        cells.size = 9
+        row(0).size = 11
+      end
+
+      # page 1: header + 67 cells (odd number -- verifies that the next
+      # page disrupts the even/odd coloring, since both the last data cell
+      # on this page and the first one on the next are colored cccccc)
+      Prawn::Table::Cell.expects(:draw_cells).with do |cells|
+        cells.map { |c, (x, y)| c.background_color } ==
+          [nil] + (%w[cccccc ffffff] * 33) + %w[cccccc]
+      end
+      # page 2: header 
+      Prawn::Table::Cell.expects(:draw_cells).with do |cells|
+        cells.map { |c, (x, y)| c.background_color } == [nil]
+      end
+      # page 2: 3 data cells
+      Prawn::Table::Cell.expects(:draw_cells).with do |cells|
+        cells.map { |c, (x, y)| c.background_color } ==
+          %w[cccccc ffffff cccccc]
+      end
+      t.draw
+    end
+
+    it "should not override an explicit background_color" do
+      data = [["foo"], ["bar"], ["baz"]]
+      pdf = Prawn::Document.new
+      table = pdf.table(data, :row_colors => ['cccccc', 'ffffff']) { |t|
+        t.cells[0, 0].background_color = 'dddddd'
+      }
+      table.cells.map{|x| x.background_color}.should == %w[dddddd ffffff cccccc]
     end
   end
 
@@ -582,6 +730,27 @@ describe "Prawn::Table" do
       end
     end
 
+    it "should draw all backgrounds before any borders" do
+      # lest backgrounds overlap borders:
+      # https://github.com/sandal/prawn/pull/226
+
+      seq = sequence("drawing_order")
+
+      t = @pdf.make_table([["A", "B"]],
+            :cell_style => {:background_color => 'ff0000'})
+      ca = t.cells[0, 0]
+      cb = t.cells[0, 1]
+
+      # XXX Not a perfectly general test, because it would still be acceptable
+      # if we drew B then A
+      ca.expects(:draw_background).in_sequence(seq)
+      cb.expects(:draw_background).in_sequence(seq)
+      ca.expects(:draw_borders).in_sequence(seq)
+      cb.expects(:draw_borders).in_sequence(seq)
+
+      t.draw
+    end
+
     it "should allow multiple inkings of the same table" do
       pdf = Prawn::Document.new
       t = Prawn::Table.new([["foo"]], pdf)
@@ -595,6 +764,22 @@ describe "Prawn::Table" do
 
       pdf.move_cursor_to(400)
       t.draw
+    end
+
+    describe "in stretchy bounding boxes" do
+      it "should draw all cells on a row at the same y-position" do
+        pdf = Prawn::Document.new
+        
+        text_y = pdf.y.to_i - 5 # text starts 5pt below current y pos (padding)
+
+        pdf.bounding_box([0, pdf.cursor], :width => pdf.bounds.width) do
+          pdf.expects(:draw_text!).checking { |text, options|
+            pdf.bounds.absolute_top.should == text_y
+          }.times(3)
+
+          pdf.table([%w[a b c]])
+        end
+      end
     end
   end
 
@@ -685,5 +870,163 @@ describe "Prawn::Table" do
 
   end
 
+end
+
+describe "colspan / rowspan" do
+  before(:each) { create_pdf }
+  
+  it "doesn't raise an error" do
+    lambda {
+      @pdf.table([[{:content => "foo", :colspan => 2, :rowspan => 2}]])
+    }.should.not.raise
+  end
+
+  it "colspan is properly counted" do
+    t = @pdf.make_table([[{:content => "foo", :colspan => 2}]])
+    t.column_length.should == 2
+  end
+
+  it "rowspan is properly counted" do
+    t = @pdf.make_table([[{:content => "foo", :rowspan => 2}]])
+    t.row_length.should == 2
+  end
+
+  it "raises if colspan or rowspan are called after layout" do
+    lambda {
+      @pdf.table([["foo"]]) { cells[0, 0].colspan = 2 }
+    }.should.raise(Prawn::Errors::InvalidTableSpan)
+
+    lambda {
+      @pdf.table([["foo"]]) { cells[0, 0].rowspan = 2 }
+    }.should.raise(Prawn::Errors::InvalidTableSpan)
+  end
+
+  it "raises when spans overlap" do
+    lambda {
+      @pdf.table([["foo", {:content => "bar", :rowspan => 2}],
+                  [{:content => "baz", :colspan => 2}]])
+    }.should.raise(Prawn::Errors::InvalidTableSpan)
+  end
+
+  it "table and cell width account for colspan" do
+    t = @pdf.table([["a", {:content => "b", :colspan => 2}]],
+                   :column_widths => [100, 100, 100])
+    spanned = t.cells[0, 1]
+    spanned.colspan.should == 2
+    t.width.should == 300
+    t.cells.min_width.should == 300
+    t.cells.max_width.should == 300
+    spanned.width.should == 200
+  end
+
+  it "table and cell height account for rowspan" do
+    t = @pdf.table([["a"], [{:content => "b", :rowspan => 2}]]) do
+      row(0..2).height = 100
+    end
+    spanned = t.cells[1, 0]
+    spanned.rowspan.should == 2
+    t.height.should == 300
+    spanned.height.should == 200
+  end
+
+  it "provides the full content_width as drawing space" do
+    w = @pdf.make_table([["foo"]]).cells[0, 0].content_width
+    
+    t = @pdf.make_table([[{:content => "foo", :colspan => 2}]])
+    t.cells[0, 0].spanned_content_width.should == w
+  end
+
+  it "dummy cells are not drawn" do
+    # make a fake master cell for the dummy cell to slave to
+    t = @pdf.make_table([[{:content => "foo", :colspan => 2}]])
+
+    # drawing just a dummy cell should not ink
+    @pdf.expects(:stroke_line).never
+    @pdf.expects(:draw_text!).never
+    Prawn::Table::Cell.draw_cells([t.cells[0, 1]])
+  end
+
+  it "dummy cells do not add any height or width" do
+    t1 = @pdf.table([["foo"]])
+
+    t2 = @pdf.table([[{:content => "foo", :colspan => 2}]])
+    t2.width.should == t1.width
+
+    t3 = @pdf.table([[{:content => "foo", :rowspan => 2}]])
+    t3.height.should == t1.height
+  end
+
+  it "dummy cells ignored by #style" do
+    t = @pdf.table([[{:content => "blah", :colspan => 2}]],
+                   :cell_style => { :size => 9 })
+    t.cells[0, 0].size.should == 9
+  end
+
+  it "splits natural width between cols in the group" do
+    t = @pdf.table([[{:content => "foo", :colspan => 2}]])
+    widths = t.column_widths
+    widths[0].should == widths[1]
+  end
+
+  it "splits natural width between cols when width is increased" do
+    t = @pdf.table([[{:content => "foo", :colspan => 2}]],
+                   :width => @pdf.bounds.width)
+    widths = t.column_widths
+    widths[0].should == widths[1]
+  end
+
+  it "splits min-width between cols in the group" do
+    # Since column_widths, when reducing column widths, reduces proportional to
+    # the remaining width after each column's min width, we must ensure that the
+    # min-width is split proportionally in order to ensure the width is still
+    # split evenly when the width is reduced. (See "splits natural width between
+    # cols when width is reduced".)
+    t = @pdf.table([[{:content => "foo", :colspan => 2}]],
+                   :width => 20)
+    t.column(0).min_width.should == t.column(1).min_width
+  end
+
+  it "splits natural width between cols when width is reduced" do
+    t = @pdf.table([[{:content => "foo", :colspan => 2}]],
+                   :width => 20)
+    widths = t.column_widths
+    widths[0].should == widths[1]
+  end
+
+  it "splits natural_content_height between rows in the group" do
+    t = @pdf.table([[{:content => "foo", :rowspan => 2}]])
+    heights = t.row_heights
+    heights[0].should == heights[1]
+  end
+
+  it "skips column numbers that have been col-spanned" do
+    t = @pdf.table([["a", "b", {:content => "c", :colspan => 3}, "d"]])
+    t.cells[0, 0].content.should == "a"
+    t.cells[0, 1].content.should == "b"
+    t.cells[0, 2].content.should == "c"
+    t.cells[0, 3].should.be.kind_of(Prawn::Table::Cell::SpanDummy)
+    t.cells[0, 4].should.be.kind_of(Prawn::Table::Cell::SpanDummy)
+    t.cells[0, 5].content.should == "d"
+  end
+
+  it "skips row/col positions that have been row-spanned" do
+    t = @pdf.table([["a", {:content => "b", :colspan => 2, :rowspan => 2}, "c"],
+                    ["d",                                                  "e"],
+                    ["f",               "g",              "h",             "i"]])
+    t.cells[0, 0].content.should == "a"
+    t.cells[0, 1].content.should == "b"
+    t.cells[0, 2].should.be.kind_of(Prawn::Table::Cell::SpanDummy)
+    t.cells[0, 3].content.should == "c"
+
+    t.cells[1, 0].content.should == "d"
+    t.cells[1, 1].should.be.kind_of(Prawn::Table::Cell::SpanDummy)
+    t.cells[1, 2].should.be.kind_of(Prawn::Table::Cell::SpanDummy)
+    t.cells[1, 3].content.should == "e"
+
+    t.cells[2, 0].content.should == "f"
+    t.cells[2, 1].content.should == "g"
+    t.cells[2, 2].content.should == "h"
+    t.cells[2, 3].content.should == "i"
+  end
 end
 

@@ -18,6 +18,10 @@ module Prawn
      # other than :portrait or :landscape            
      #
      InvalidPageLayout = Class.new(StandardError)       
+
+     # Raised when a table is spanned in an impossible way.
+     #
+     InvalidTableSpan = Class.new(StandardError)
      
      # This error is raised when a method requiring a current page is called 
      # without being on a page.
@@ -86,6 +90,10 @@ module Prawn
     # This error is raise when trying to restore a graphic state that 
     #
     EmptyGraphicStateStack = Class.new(StandardError)
+
+    # Raised when unrecognized content is provided for a table cell.
+    #
+    UnrecognizedTableContent = Class.new(StandardError)
     
   end
 end   

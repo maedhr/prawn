@@ -5,13 +5,14 @@
 # into the lib/prawn/core/* source tree.
 #
 module Prawn #:nodoc:
-  VERSION = "0.11.1"
+  VERSION = "1.0.0.rc1"
 end
 
 require "prawn/core"
 require "prawn/text"
 require "prawn/graphics"
 require "prawn/images"
+require "prawn/images/image"
 require "prawn/images/jpg"
 require "prawn/images/png"
 require "prawn/stamp"

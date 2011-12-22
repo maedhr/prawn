@@ -126,7 +126,7 @@ module Prawn
       def cap_height
         @cap_height ||= begin
           height = @ttf.os2.exists? && @ttf.os2.cap_height || 0
-          height == 0 ? ascender : height
+          height == 0 ? @ascender : height
         end
       end
 
@@ -190,6 +190,16 @@ module Prawn
         cmap[code] > 0
       end
 
+      # Returns the number of characters in +str+ (a UTF-8-encoded string).
+      #
+      def character_count(str)
+        if str.respond_to?(:encode)
+          str.length
+        else
+          str.unpack("U*").length
+        end
+      end
+
       private
 
       def cmap
@@ -233,6 +243,11 @@ module Prawn
 
       def character_width_by_code(code)    
         return 0 unless cmap[code]
+
+        # Some TTF fonts have nonzero widths for \n (UTF-8 / ASCII code: 10).
+        # Patch around this as we'll never be drawing a newline with a width.
+        return 0.0 if code == 10
+
         @char_widths[code] ||= Integer(hmtx.widths[cmap[code]] * scale_factor)
       end                   
 
@@ -279,8 +294,8 @@ module Prawn
                                    :Flags       => pdf_flags,
                                    :StemV       => stemV,
                                    :ItalicAngle => italic_angle,
-                                   :Ascent      => ascender,
-                                   :Descent     => descender,
+                                   :Ascent      => @ascender,
+                                   :Descent     => @descender,
                                    :CapHeight   => cap_height,
                                    :XHeight     => x_height)
 

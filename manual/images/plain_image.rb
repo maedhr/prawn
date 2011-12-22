@@ -1,6 +1,6 @@
 # encoding: utf-8
 #
-# To embed images onto your pdf file use the <code>image</code> method.
+# To embed images onto your PDF file use the <code>image</code> method.
 # It accepts the file path of the image to be loaded and some optional
 # arguments.
 #
@@ -14,5 +14,5 @@ require File.expand_path(File.join(File.dirname(__FILE__),
 filename = File.basename(__FILE__).gsub('.rb', '.pdf')
 Prawn::Example.generate(filename) do
   text "The image will go right below this line of text."
-  image "#{Prawn::BASEDIR}/data/images/pigs.jpg"
+  image "#{Prawn::DATADIR}/images/pigs.jpg"
 end

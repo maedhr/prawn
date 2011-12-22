@@ -9,7 +9,8 @@ Prawn::Example.generate("table.pdf") do
   build_package("table", [
       [ "Basics", [ "creation",
                     "content_and_subtables",
-                    "flow_and_header"
+                    "flow_and_header",
+                    "position"
                   ]
       ],
       [ "Styling", [ "column_widths",
@@ -17,7 +18,9 @@ Prawn::Example.generate("table.pdf") do
                      "row_colors",
                      "cell_dimensions",
                      "cell_borders_and_bg",
-                     "cell_text"
+                     "cell_text",
+                     "image_cells",
+                     "span"
                    ]
       ],
       ["Initializer Block", [ "basic_block",
@@ -36,7 +39,7 @@ Prawn::Example.generate("table.pdf") do
           "What content can be placed on tables",
           "Subtables (or tables within tables)",
           "How to style the whole table",
-          "How to use Initializer Blocks to style only specific portions of the table"
+          "How to use initializer blocks to style only specific portions of the table"
         )
   end
 end

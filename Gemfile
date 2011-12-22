@@ -1,14 +1,12 @@
 source :rubygems
 
-gem "ttfunk", "~>1.0.0"
+gem "ttfunk", "~>1.0.3"
 gem "pdf-reader", "~>0.9.0"
 
 group :test do
-  # TODO: once an official pdf-inspector gem is released, remove the :git
-  #       option from the following line
-  gem "pdf-inspector", "~>1.0.0", :require => "pdf/inspector", :git => "https://github.com/sandal/pdf-inspector.git"
+  gem "pdf-inspector", "~>1.0.1", :require => "pdf/inspector"
   gem "test-spec"
   gem "mocha"
-  gem "test-unit", "1.2.3", :platform => :ruby_19
+  gem "test-unit", "1.2.3", :platforms => [:ruby_19, :mingw_19]
   gem "rake"
 end

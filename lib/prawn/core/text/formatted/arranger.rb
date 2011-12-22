@@ -16,17 +16,18 @@ module Prawn
           attr_reader :max_line_height
           attr_reader :max_descender
           attr_reader :max_ascender
+          attr_accessor :consumed
 
           # The following present only for testing purposes
           attr_reader :unconsumed
-          attr_reader :consumed
           attr_reader :fragments
           attr_reader :current_format_state
 
-          def initialize(document)
+          def initialize(document, options={})
             @document = document
             @fragments = []
             @unconsumed = []
+            @kerning = options[:kerning]
           end
 
           def space_count
@@ -280,9 +281,9 @@ module Prawn
           end
 
           def set_line_measurement_maximums(fragment)
-            @max_line_height = [@max_line_height, fragment.line_height].max
-            @max_descender = [@max_descender, fragment.descender].max
-            @max_ascender = [@max_ascender, fragment.ascender].max
+            @max_line_height = [@max_line_height, fragment.line_height].compact.max
+            @max_descender = [@max_descender, fragment.descender].compact.max
+            @max_ascender = [@max_ascender, fragment.ascender].compact.max
           end
           
         end

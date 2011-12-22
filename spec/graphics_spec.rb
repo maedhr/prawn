@@ -162,6 +162,29 @@ describe "When drawing an ellipse" do
     @pdf.ellipse [100,100], 25, 50
     @curve = PDF::Inspector::Graphics::Curve.analyze(@pdf.render)
   end
+  
+  it "should use a Bézier approximation" do
+    @curve.coords.should == 
+      [125.0, 100.0,
+
+       125.0, 127.614,
+       113.807, 150,
+       100.0, 150.0,
+       
+       86.193, 150.0,
+       75.0, 127.614,
+       75.0, 100.0,
+       
+       75.0, 72.386,
+       86.193, 50.0,
+       100.0, 50.0,
+       
+       113.807, 50.0,
+       125.0, 72.386,
+       125.0, 100.0,
+       
+       100.0, 100.0]
+  end
 
   it "should move the pointer to the center of the ellipse after drawing" do
     @curve.coords[-2..-1].should == [100,100]
@@ -180,6 +203,30 @@ describe "When drawing a circle" do
   it "should stroke the same path as the equivalent ellipse" do
     middle = @curve.coords.length / 2
     @curve.coords[0...middle].should == @curve.coords[middle..-1]
+  end
+end
+
+describe "When filling" do
+  before(:each) { create_pdf }
+
+  it "should default to the f operator (nonzero winding number rule)" do
+    @pdf.expects(:add_content).with("f")
+    @pdf.fill
+  end
+
+  it "should use f* for :fill_rule => :even_odd" do
+    @pdf.expects(:add_content).with("f*")
+    @pdf.fill(:fill_rule => :even_odd)
+  end
+
+  it "should use b by default for fill_and_stroke (nonzero winding number)" do
+    @pdf.expects(:add_content).with("b")
+    @pdf.fill_and_stroke
+  end
+
+  it "should use b* for fill_and_stroke(:fill_rule => :even_odd)" do
+    @pdf.expects(:add_content).with("b*")
+    @pdf.fill_and_stroke(:fill_rule => :even_odd)
   end
 end
 

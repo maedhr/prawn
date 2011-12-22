@@ -256,6 +256,12 @@ describe "#text" do
   it "should raise an exception when an unknown font is used" do
     lambda { @pdf.font "Pao bu" }.should.raise(Prawn::Errors::UnknownFont)
   end
+  
+  it "should not raise an exception when providing Pathname instance as font" do
+    lambda {
+      @pdf.font Pathname.new("#{Prawn::DATADIR}/fonts/comicsans.ttf")
+    }.should.not.raise(Prawn::Errors::UnknownFont)
+  end
 
   it "should correctly render a utf-8 string when using a built-in font" do
     str = "©" # copyright symbol
@@ -268,7 +274,7 @@ describe "#text" do
 
   it "should correctly render a utf-8 string when using a TTF font" do
     str = "©" # copyright symbol
-    @pdf.font "#{Prawn::BASEDIR}/data/fonts/DejaVuSans.ttf"
+    @pdf.font "#{Prawn::DATADIR}/fonts/DejaVuSans.ttf"
     @pdf.text str
 
     # grab the text from the rendered PDF and ensure it matches
@@ -309,9 +315,9 @@ describe "#text" do
         Prawn::Errors::IncompatibleStringEncoding)
     end
     it "should not raise an exception when a shift-jis string is rendered" do
-      datafile = "#{Prawn::BASEDIR}/data/shift_jis_text.txt"
+      datafile = "#{Prawn::DATADIR}/shift_jis_text.txt"
       sjis_str = File.open(datafile, "r:shift_jis") { |f| f.gets }
-      @pdf.font("#{Prawn::BASEDIR}/data/fonts/gkai00mp.ttf")
+      @pdf.font("#{Prawn::DATADIR}/fonts/gkai00mp.ttf")
       lambda { @pdf.text sjis_str }.should.not.raise(
         Prawn::Errors::IncompatibleStringEncoding)
     end
@@ -323,7 +329,7 @@ describe "#text" do
         Prawn::Errors::IncompatibleStringEncoding)
     end
     it "should raise an exception when a shift-jis string is rendered" do
-      sjis_str = File.read("#{Prawn::BASEDIR}/data/shift_jis_text.txt")
+      sjis_str = File.read("#{Prawn::DATADIR}/shift_jis_text.txt")
       lambda { @pdf.text sjis_str }.should.raise(
         Prawn::Errors::IncompatibleStringEncoding)
     end
@@ -380,6 +386,32 @@ describe "#text" do
         text.strings[3].should == ("hello " * 19).strip
         text.strings[4].should == ("hello " * 21).strip
       end
+    end
+  end
+
+  describe "kerning" do
+    it "should respect text kerning setting (document default)" do
+      create_pdf
+      @pdf.font.expects(:compute_width_of).with do |str, options|
+        str == "VAT" && options[:kerning] == true
+      end.at_least_once.returns(10)
+      @pdf.text "VAT"
+    end
+
+    it "should respect text kerning setting (kerning=true)" do
+      create_pdf
+      @pdf.font.expects(:compute_width_of).with do |str, options|
+        str == "VAT" && options[:kerning] == true
+      end.at_least_once.returns(10)
+      @pdf.text "VAT", :kerning => true
+    end
+
+    it "should respect text kerning setting (kerning=false)" do
+      create_pdf
+      @pdf.font.expects(:compute_width_of).with do |str, options|
+        str == "VAT" && options[:kerning] == false
+      end.at_least_once.returns(10)
+      @pdf.text "VAT", :kerning => false
     end
   end
 end

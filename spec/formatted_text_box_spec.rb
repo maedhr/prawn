@@ -21,7 +21,7 @@ describe "Text::Formatted::Box wrapping" do
   it "should not raise Encoding::CompatibilityError when keeping a TTF and an " +
     "AFM font together" do
     ruby_19 do
-      file = "#{Prawn::BASEDIR}/data/fonts/gkai00mp.ttf"
+      file = "#{Prawn::DATADIR}/fonts/gkai00mp.ttf"
       @pdf.font_families["Kai"] = {
         :normal => { :file => file, :font => "Kai" }
       }
@@ -75,13 +75,53 @@ describe "Text::Formatted::Box wrapping" do
     text_box.render
     text_box.text.should == "Hello World\n2"
   end
+
+  it "should properly handle empty slices using default encoding" do
+    texts = [{ :text => "Noua Delineatio Geographica generalis | Apostolicarum peregrinationum | S FRANCISCI XAUERII | Indiarum & Iaponiæ Apostoli", :font => 'Courier', :size => 10 }]
+    text_box = Prawn::Text::Formatted::Box.new(texts, :document => @pdf, :width => @pdf.width_of("Noua Delineatio Geographica gen"))
+    assert_nothing_raised do
+      text_box.render
+    end
+    text_box.text.should == "Noua Delineatio Geographica\ngeneralis | Apostolicarum\nperegrinationum | S FRANCISCI\nXAUERII | Indiarum & Iaponi\346\nApostoli"
+  end
+  
+  describe "Unicode" do
+    before do
+      if RUBY_VERSION < '1.9'
+        @reset_value = $KCODE
+        $KCODE='u'
+      else
+        @reset_value = [Encoding.default_external, Encoding.default_internal]
+        Encoding.default_external = Encoding::UTF_8
+        Encoding.default_internal = Encoding::UTF_8
+      end
+    end
+    
+    after do
+      if RUBY_VERSION < '1.9'
+        $KCODE=@reset_value
+      else
+        Encoding.default_external = @reset_value[0]
+        Encoding.default_internal = @reset_value[1]
+      end
+    end
+
+    it "should properly handle empty slices using Unicode encoding" do
+      texts = [{ :text => "Noua Delineatio Geographica generalis | Apostolicarum peregrinationum | S FRANCISCI XAUERII | Indiarum & Iaponiæ Apostoli", :font => 'Courier', :size => 10 }]
+      text_box = Prawn::Text::Formatted::Box.new(texts, :document => @pdf, :width => @pdf.width_of("Noua Delineatio Geographica gen"))
+      assert_nothing_raised do
+        text_box.render
+      end
+      text_box.text.should == "Noua Delineatio Geographica\ngeneralis | Apostolicarum\nperegrinationum | S FRANCISCI\nXAUERII | Indiarum & Iaponi\346\nApostoli"
+    end
+  end
 end
 
 describe "Text::Formatted::Box with :fallback_fonts option that includes" +
   "a Chinese font and set of Chinese glyphs not in the current font" do
   it "should change the font to the Chinese font for the Chinese glyphs" do
     create_pdf
-    file = "#{Prawn::BASEDIR}/data/fonts/gkai00mp.ttf"
+    file = "#{Prawn::DATADIR}/fonts/gkai00mp.ttf"
     @pdf.font_families["Kai"] = {
       :normal => { :file => file, :font => "Kai" }
     }
@@ -109,7 +149,7 @@ describe "Text::Formatted::Box with :fallback_fonts option that includes" +
   "an AFM font and Win-Ansi glyph not in the current Chinese font" do
   it "should change the font to the AFM font for the Win-Ansi glyph" do
     create_pdf
-    file = "#{Prawn::BASEDIR}/data/fonts/gkai00mp.ttf"
+    file = "#{Prawn::DATADIR}/fonts/gkai00mp.ttf"
     @pdf.font_families["Kai"] = {
       :normal => { :file => file, :font => "Kai" }
     }
@@ -138,7 +178,7 @@ describe "Text::Formatted::Box with :fallback_fonts option and fragment " +
   "level font" do
   it "should use the fragment level font except for glyphs not in that font" do
     create_pdf
-    file = "#{Prawn::BASEDIR}/data/fonts/gkai00mp.ttf"
+    file = "#{Prawn::DATADIR}/fonts/gkai00mp.ttf"
     @pdf.font_families["Kai"] = {
       :normal => { :file => file, :font => "Kai" }
     }
@@ -165,7 +205,7 @@ end
 describe "Text::Formatted::Box" do
   before(:each) do
     create_pdf
-    file = "#{Prawn::BASEDIR}/data/fonts/gkai00mp.ttf"
+    file = "#{Prawn::DATADIR}/fonts/gkai00mp.ttf"
     @pdf.font_families["Kai"] = {
       :normal => { :file => file, :font => "Kai" }
     }
